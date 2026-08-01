@@ -1,6 +1,5 @@
 package dev.alejandrorosas.streamlib
 
-import android.content.Context
 import android.media.MediaFormat
 import android.util.Log
 import java.io.File
@@ -31,7 +30,8 @@ fun StreamService.saveLastNSeconds(seconds: Int): Pair<Boolean, String?> {
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
     val outFile = File(clipsDir, "clip_${'$'}{timestamp}_${'$'}{seconds}s.mp4")
     try {
-        val success = ReplayHolder.replayManager?.saveLastNSeconds(seconds, outFile, rtmpUSB?.getVideoFormat()) ?: false
+        // Use public getter on StreamService rather than accessing private members
+        val success = ReplayHolder.replayManager?.saveLastNSeconds(seconds, outFile, getRtmpVideoFormat()) ?: false
         return Pair(success, if (success) outFile.absolutePath else null)
     } catch (t: Throwable) {
         Log.e("StreamService", "Failed to save clip", t)
