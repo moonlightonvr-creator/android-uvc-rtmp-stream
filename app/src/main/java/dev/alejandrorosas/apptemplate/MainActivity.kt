@@ -217,4 +217,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
                 Log.w(TAG, "Exception while unbinding service in onStop", t)
             } finally {
                 isBound = false
-           
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopStreamService()
+    }
+}
