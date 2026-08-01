@@ -27,6 +27,8 @@ import com.serenegiant.usb.UVCCamera;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import dev.alejandrorosas.streamlib.replay.ReplayHolder;
+
 /**
  * Wrapper to stream with camera1 api and microphone. Support stream with SurfaceView, TextureView
  * and OpenGlView(Custom SurfaceView that use OpenGl). SurfaceView and TextureView use buffer to
@@ -463,6 +465,13 @@ public abstract class USBBase implements GetAacData, GetCameraData, GetVideoData
 
     @Override
     public void getVideoData(ByteBuffer h264Buffer, MediaCodec.BufferInfo info) {
+        // write into replay buffer if present (always capture encoded frames)
+        try {
+            ReplayHolder.writeFrame(h264Buffer, info);
+        } catch (Throwable t) {
+            Log.w(TAG, "Replay write failed", t);
+        }
+
         if (recording) {
             if (info.flags == MediaCodec.BUFFER_FLAG_KEY_FRAME
                 && !canRecord
@@ -565,5 +574,12 @@ public abstract class USBBase implements GetAacData, GetCameraData, GetVideoData
                 this.glInterface = glInterface;
             }
         }
+    }
+
+    /**
+     * Expose the current encoder video format so callers (e.g., StreamService) can mux replay clips.
+     */
+    public MediaFormat getVideoFormat() {
+        return videoFormat;
     }
 }
