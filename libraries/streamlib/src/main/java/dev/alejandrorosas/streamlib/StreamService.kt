@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.hardware.usb.UsbDevice
+import android.media.MediaFormat
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -114,6 +115,13 @@ class StreamService : Service() {
 
     fun stopPreview() {
         if (rtmpUSB?.isOnPreview == true) rtmpUSB!!.stopPreview(uvcCamera)
+    }
+
+    /**
+     * Expose the current encoder video format so callers (e.g., StreamService+Replay) can mux replay clips.
+     */
+    fun getRtmpVideoFormat(): MediaFormat? {
+        return rtmpUSB?.getVideoFormat()
     }
 
     private val connectCheckerRtmp = object : ConnectCheckerRtmp {
