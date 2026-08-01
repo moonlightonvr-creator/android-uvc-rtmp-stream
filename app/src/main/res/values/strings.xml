@@ -1,8 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">UVC Rtmp Stream</string>
+    <string name="app_name">Moonlight Camera</string>
     <string name="button_stop_service">Stop service</string>
     <string name="button_start_service">Start service</string>
     <string name="button_stop_stream">Stop stream</string>
     <string name="button_start_stream">Start stream</string>
     <string name="toast_missing_stream_url">Please configure the Stream URL</string>
+    <string-array name="bitrate_presets">
+        <item>Low (3 Mbps)</item>
+        <item>Medium (6 Mbps)</item>
+        <item>High (10 Mbps)</item>
+        <item>Custom</item>
+    </string-array>
 </resources>
