@@ -370,7 +370,11 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
             return
         }
         val captureIntent = mediaProjectionManager?.createScreenCaptureIntent()
-        startActivityForResult(captureIntent, SCREEN_RECORD_REQUEST_CODE)
+        if (captureIntent != null) {
+            startActivityForResult(captureIntent, SCREEN_RECORD_REQUEST_CODE)
+        } else {
+            Snackbar.make(findViewById(R.id.control_panel), "Screen capture is unavailable", Snackbar.LENGTH_LONG).show()
+        }
     }
 
     private fun stopScreenRecord() {
