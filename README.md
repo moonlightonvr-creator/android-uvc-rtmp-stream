@@ -11,6 +11,14 @@ Simple Android app to stream over RTMP using a USB camera, with local replay hig
    - Tap it to install
 3. If Android blocks installation, enable "Install unknown apps" for your file manager or browser.
 
+## Cloud build for mobile-only install
+
+Use the GitHub Actions workflow in `.github/workflows/build-apk-artifact.yml` to build and download the APK from GitHub.
+
+1. Push to the `main` or `master` branch, or run the workflow manually from the Actions tab.
+2. Download the `debug-apk` artifact from the workflow run.
+3. Install the APK on your Android device.
+
 ## What this build includes
 
 - USB UVC camera preview and RTMP streaming
