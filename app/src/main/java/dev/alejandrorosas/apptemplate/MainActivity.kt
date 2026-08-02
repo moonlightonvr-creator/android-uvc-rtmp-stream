@@ -14,7 +14,6 @@ import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.MediaRecorder
 import android.media.projection.MediaProjection
-import android.media.projection.MediaProjectionCallback
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
@@ -42,6 +41,7 @@ import com.pedro.rtplibrary.view.OpenGlView
 import dagger.hilt.android.AndroidEntryPoint
 import dev.alejandrorosas.apptemplate.MainViewModel.ViewState
 import dev.alejandrorosas.streamlib.StreamService
+import dev.alejandrorosas.streamlib.saveLastNSeconds
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -434,7 +434,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == SCREEN_RECORD_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
-                mediaProjection = mediaProjectionManager?.getMediaProjection(resultCode, data)
+                val projectionIntent = data
+                mediaProjection = mediaProjectionManager?.getMediaProjection(resultCode, projectionIntent)
                 val outputFile = getExternalFilesDir(null)?.resolve("ScreenRecordings")?.resolve("screen_${System.currentTimeMillis()}.mp4")
                 if (prepareMediaRecorder(outputFile?.absolutePath ?: "")) {
                     screenRecordingActive = true
