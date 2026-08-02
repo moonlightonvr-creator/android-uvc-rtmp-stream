@@ -1,52 +1,19 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-apply plugin: 'dagger.hilt.android.plugin'
-
+plugins { id 'com.android.application' }
 android {
-    compileSdkVersion 34
-    namespace "dev.alejandrorosas.apptemplate"
-
+    namespace 'com.capture.clipper'
+    compileSdk 34
     defaultConfig {
-        applicationId "dev.alejandrorosas.apptemplate"
-        minSdkVersion 23
-        targetSdkVersion 34
-
-        versionCode 1
-        versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        applicationId "com.capture.clipper"
+        minSdk 23
+        targetSdk 34
+        versionCode 8
+        versionName "8.0"
     }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
+    lint { checkReleaseBuilds false; abortOnError false }
 }
-
+repositories { google(); mavenCentral(); maven { url 'https://jitpack.io' } }
 dependencies {
-    implementation project(':core')
-    implementation project(':libraries:streamlib')
-
-    implementation rootProject.ext.kotlin
-    implementation rootProject.ext.appcompat
-    implementation "androidx.preference:preference-ktx:1.2.1"
-    implementation "com.google.android.material:material:1.9.0"
-    implementation "androidx.fragment:fragment-ktx:1.6.2"
-    implementation rootProject.ext.core
-    implementation rootProject.ext.constraintLayout
-    implementation "androidx.webkit:webkit:1.10.0"
-    implementation rootProject.ext.dagger
-    implementation rootProject.ext.hilt
-
-    kapt rootProject.ext.daggerCompiler
-    kapt rootProject.ext.hiltCompiler
-    kapt rootProject.ext.androidXHiltCompiler
-
-    testImplementation rootProject.ext.junit
-
-    androidTestImplementation rootProject.ext.androidTestJunit
-    androidTestImplementation rootProject.ext.androidTestEspresso
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.github.jiangdongguo.AndroidUSBCamera:libuvccamera:v3.1.0'
 }

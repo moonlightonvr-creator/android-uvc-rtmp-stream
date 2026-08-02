@@ -1,4 +1,6 @@
-name: Build Debug APK Artifact
+
+
+lname: Build Debug APK Artifact
 
 on:
   push:
