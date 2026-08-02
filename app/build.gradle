@@ -1,19 +1,42 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+}
+
 android {
     namespace 'com.capture.clipper'
     compileSdk 34
+
     defaultConfig {
         applicationId "com.capture.clipper"
         minSdk 23
         targetSdk 34
-        versionCode 8
-        versionName "8.0"
+        versionCode 9
+        versionName "9.0" // Version bump to clear the GitHub Actions compiler cache entirely
     }
-    lint { checkReleaseBuilds false; abortOnError false }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
 }
-repositories { google(); mavenCentral(); maven { url 'https://jitpack.io' } }
+
+repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
-    implementation 'com.github.jiangdongguo.AndroidUSBCamera:libuvccamera:v3.1.0'
+    
+    // Fixed target path that JitPack can actively index and download without throwing a 404
+    implementation 'com.github.jiangdongguo:AndroidUSBCamera:3.2.8'
 }
