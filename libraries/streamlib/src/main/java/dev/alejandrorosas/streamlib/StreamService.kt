@@ -35,6 +35,13 @@ class StreamService : Service() {
     private var rtmpUSB: RtmpUSB? = null
     private var uvcCamera: UVCCamera? = null
     private var usbMonitor: USBMonitor? = null
+    private var verticalCropEnabled = false
+    private var streamBitrateKbps = 4000
+    private var recordingBitrateKbps = 12000
+    private var streamWidth = 1280
+    private var streamHeight = 720
+    private var recordingWidth = 1280
+    private var recordingHeight = 720
     private val notificationManager: NotificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 
     override fun onCreate() {
@@ -68,6 +75,7 @@ class StreamService : Service() {
         super.onDestroy()
         Log.e(TAG, "RTP service destroy")
         stopStream()
+        stopLocalRecording()
         usbMonitor?.unregister()
         uvcCamera?.destroy()
     }
@@ -86,12 +94,46 @@ class StreamService : Service() {
     fun startStreamRtp(endpoint: String): Boolean {
         if (rtmpUSB?.isStreaming == false) {
             this.endpoint = endpoint
-            if (rtmpUSB!!.prepareVideo(cameraWidth, cameraHeight, 30, 4000 * 1024, 0, uvcCamera) && rtmpUSB!!.prepareAudio()) {
+            val width = if (verticalCropEnabled) 720 else streamWidth
+            val height = if (verticalCropEnabled) 1280 else streamHeight
+            val fps = if (verticalCropEnabled) 60 else 30
+            val bitrate = streamBitrateKbps * 1024
+            if (rtmpUSB!!.prepareVideo(width, height, fps, bitrate, 0, uvcCamera) && rtmpUSB!!.prepareAudio()) {
                 rtmpUSB!!.startStream(uvcCamera, endpoint)
                 return true
             }
         }
         return false
+    }
+
+    fun startLocalRecording(outputPath: String): Boolean {
+        if (rtmpUSB == null || uvcCamera == null || outputPath.isBlank()) return false
+        val bitrate = recordingBitrateKbps * 1024
+        return try {
+            if (rtmpUSB!!.prepareVideo(recordingWidth, recordingHeight, 60, bitrate, 0, uvcCamera) && rtmpUSB!!.prepareAudio()) {
+                rtmpUSB!!.startRecord(uvcCamera, outputPath)
+                true
+            } else {
+                false
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to start local recording", t)
+            false
+        }
+    }
+
+    fun stopLocalRecording() {
+        if (rtmpUSB != null) {
+            try {
+                rtmpUSB!!.stopRecord(uvcCamera)
+            } catch (t: Throwable) {
+                Log.w(TAG, "Ignoring stopRecord error", t)
+            }
+        }
+    }
+
+    fun setVerticalCropEnabled(enabled: Boolean) {
+        verticalCropEnabled = enabled
     }
 
     fun setView(view: OpenGlView) {
@@ -178,6 +220,10 @@ class StreamService : Service() {
                 val maxSupportedSize = camera.supportedSizeList.maxBy { it.width * it.height }
                 cameraWidth = maxSupportedSize.width
                 cameraHeight = maxSupportedSize.height
+                streamWidth = cameraWidth
+                streamHeight = cameraHeight
+                recordingWidth = cameraWidth
+                recordingHeight = cameraHeight
                 camera.setPreviewSize(cameraWidth, cameraHeight, UVCCamera.FRAME_FORMAT_MJPEG)
             } catch (e: IllegalArgumentException) {
                 camera.destroy()

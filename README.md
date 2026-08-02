@@ -1,8 +1,23 @@
 # UVC Rtmp Stream App for Android
 
-[![](https://github.com/alejandrorosas/android-uvc-rtmp-stream/workflows/Test/badge.svg)](https://github.com/alejandrorosas/android-uvc-rtmp-stream/actions) [![](https://github.com/alejandrorosas/android-uvc-rtmp-stream/workflows/Style/badge.svg)](https://github.com/alejandrorosas/android-uvc-rtmp-stream/actions)
+Simple Android app to stream over RTMP using a USB camera, with local replay highlights, private operator notes, and a premium dark studio UI.
 
-Simple Android app to Stream over RTMP using an USB camera.
+## Local install from APK
+
+1. Build the APK locally:
+   - ./gradlew assembleDebug
+2. Install the APK on your Android device:
+   - Open the generated file at app/build/outputs/apk/debug/app-debug.apk
+   - Tap it to install
+3. If Android blocks installation, enable "Install unknown apps" for your file manager or browser.
+
+## What this build includes
+
+- USB UVC camera preview and RTMP streaming
+- Local high-bitrate recording
+- 30s/60s/90s/120s replay highlight exports
+- Private operator-side chat and audience/subscriber counters
+- Vertical 9:16 stream toggle and scene presets
 
 ## Libraries
 

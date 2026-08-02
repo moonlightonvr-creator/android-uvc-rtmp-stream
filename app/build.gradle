@@ -34,6 +34,7 @@ dependencies {
     implementation "androidx.fragment:fragment-ktx:1.6.2"
     implementation rootProject.ext.core
     implementation rootProject.ext.constraintLayout
+    implementation "androidx.webkit:webkit:1.10.0"
     implementation rootProject.ext.dagger
     implementation rootProject.ext.hilt
 
