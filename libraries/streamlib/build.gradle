@@ -2,7 +2,13 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
+    compileSdkVersion 34
     namespace "dev.alejandrorosas.streamlib"
+
+    defaultConfig {
+        minSdkVersion 23
+        targetSdkVersion 34
+    }
 }
 
 dependencies {

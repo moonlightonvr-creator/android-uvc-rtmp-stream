@@ -4,10 +4,13 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'dagger.hilt.android.plugin'
 
 android {
+    compileSdkVersion 34
     namespace "dev.alejandrorosas.apptemplate"
 
     defaultConfig {
         applicationId "dev.alejandrorosas.apptemplate"
+        minSdkVersion 23
+        targetSdkVersion 34
 
         versionCode 1
         versionName "1.0"

@@ -132,7 +132,17 @@
             android:textColor="#F5F5F7"
             android:textColorHint="#7A808D"
             android:backgroundTint="#2F313B"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:inputType="textUri"
+            android:imeOptions="actionGo" />
+
+        <Switch
+            android:id="@+id/browser_source_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Capture browser source"
+            android:textColor="#F5F5F7" />
 
         <Button
             android:id="@+id/save_scene_button"
@@ -316,6 +326,14 @@
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
                 android:text="Record" />
+
+            <Button
+                android:id="@+id/start_stop_screen_record"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Screen" />
         </LinearLayout>
 
         <LinearLayout
@@ -357,12 +375,30 @@
         </LinearLayout>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/overlay_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="140dp"
+        android:text="Live with Prism Live"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:shadowColor="#A0000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <WebView
         android:id="@+id/webview_widget"
         android:layout_width="220dp"
         android:layout_height="140dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
+        android:visibility="gone"
         android:background="#00000000"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/control_panel" />

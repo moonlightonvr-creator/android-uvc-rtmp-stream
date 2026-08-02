@@ -4,16 +4,27 @@ import android.Manifest.permission.CAMERA
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.RECORD_AUDIO
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.Color
+import android.hardware.display.DisplayManager
+import android.hardware.display.VirtualDisplay
+import android.media.MediaRecorder
+import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionCallback
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.util.DisplayMetrics
 import android.util.Log
+import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.View
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.widget.Button
@@ -23,12 +34,15 @@ import android.widget.TextView
 import android.view.inputmethod.EditorInfo
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat.requestPermissions
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.PermissionChecker
 import com.google.android.material.snackbar.Snackbar
 import com.pedro.rtplibrary.view.OpenGlView
 import dagger.hilt.android.AndroidEntryPoint
 import dev.alejandrorosas.apptemplate.MainViewModel.ViewState
 import dev.alejandrorosas.streamlib.StreamService
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -63,8 +77,23 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
     private lateinit var subscriberMinusButton: Button
     private lateinit var subscriberPlusButton: Button
     private lateinit var subscriberResetButton: Button
+    private lateinit var browserSourceSwitch: Switch
+    private lateinit var screenRecordButton: Button
     private lateinit var verticalCropSwitch: Switch
+    private lateinit var overlayTextView: TextView
     private lateinit var webViewWidget: WebView
+
+    private var screenRecordingActive = false
+    private var mediaProjectionManager: MediaProjectionManager? = null
+    private var mediaProjection: MediaProjection? = null
+    private var virtualDisplay: VirtualDisplay? = null
+    private var mediaRecorder: MediaRecorder? = null
+    private var screenDensity = 0
+    private var screenWidth = 0
+    private var screenHeight = 0
+    private val SCREEN_RECORD_REQUEST_CODE = 4321
+    private val PERMISSION_REQUEST_CODE = 1002
+    private val requiredPermissions = arrayOf(READ_EXTERNAL_STORAGE, RECORD_AUDIO, CAMERA, WRITE_EXTERNAL_STORAGE)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,7 +117,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         subscriberMinusButton = findViewById(R.id.subscriber_minus_button)
         subscriberPlusButton = findViewById(R.id.subscriber_plus_button)
         subscriberResetButton = findViewById(R.id.subscriber_reset_button)
+        browserSourceSwitch = findViewById(R.id.browser_source_switch)
         verticalCropSwitch = findViewById(R.id.vertical_crop_switch)
+        overlayTextView = findViewById(R.id.overlay_text_view)
         webViewWidget = findViewById(R.id.webview_widget)
 
         StreamService.openGlView = findViewById(R.id.openglview)
@@ -121,6 +152,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         findViewById<Button>(R.id.save_90s).setOnClickListener { saveReplayClip(90) }
         findViewById<Button>(R.id.save_120s).setOnClickListener { saveReplayClip(120) }
         findViewById<Button>(R.id.save_scene_button).setOnClickListener { saveScenePreset() }
+        screenRecordButton = findViewById(R.id.start_stop_screen_record)
+
         privateChatSendButton.setOnClickListener { sendPrivateReply() }
         audienceMinusButton.setOnClickListener { updateAudience(-1) }
         audiencePlusButton.setOnClickListener { updateAudience(1) }
@@ -128,6 +161,28 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         subscriberMinusButton.setOnClickListener { updateSubscribers(-1) }
         subscriberPlusButton.setOnClickListener { updateSubscribers(1) }
         subscriberResetButton.setOnClickListener { resetSubscribers() }
+        screenRecordButton.setOnClickListener { toggleScreenRecord() }
+        browserSourceSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                loadBrowserUrl()
+            }
+            webViewWidget.visibility = if (isChecked) View.VISIBLE else View.GONE
+            streamStatusText.text = if (isChecked) {
+                "Browser source capture enabled — use screen recording to preserve browser content"
+            } else {
+                "Browser source capture disabled"
+            }
+        }
+        browserUrlInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE) {
+                if (browserSourceSwitch.isChecked) {
+                    loadBrowserUrl()
+                }
+                true
+            } else {
+                false
+            }
+        }
         privateChatInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) {
                 sendPrivateReply()
@@ -149,7 +204,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         restorePrivateChat()
         restoreAudienceCount()
         restoreSubscriberCount()
-        requestPermissions(this, arrayOf(READ_EXTERNAL_STORAGE, RECORD_AUDIO, CAMERA, WRITE_EXTERNAL_STORAGE), 1)
+        initializeScreenCapture()
+        ensurePermissions()
     }
 
     private fun setupWebWidget() {
@@ -162,9 +218,11 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         settings.cacheMode = WebSettings.LOAD_DEFAULT
         settings.setSupportZoom(false)
         settings.builtInZoomControls = false
+        settings.mediaPlaybackRequiresUserGesture = false
         webViewWidget.setBackgroundColor(Color.TRANSPARENT)
         webViewWidget.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         webViewWidget.webViewClient = android.webkit.WebViewClient()
+        webViewWidget.webChromeClient = WebChromeClient()
     }
 
     private fun restoreSceneState() {
@@ -176,8 +234,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         browserUrlInput.setText(lastBrowserUrl)
         verticalCropSwitch.isChecked = prefs.getBoolean("vertical_crop", false)
         streamStatusText.text = if (verticalCropSwitch.isChecked) "Vertical 9:16 stream ready" else "Landscape stream ready"
+        val browserEnabled = prefs.getBoolean("browser_source_enabled", false)
         sceneStatusText.text = "Scene preset • ${lastSceneName ?: "Prime Black"}"
-        if (!lastBrowserUrl.isNullOrBlank()) {
+        overlayTextView.text = lastOverlay
+        browserSourceSwitch.isChecked = browserEnabled
+        webViewWidget.visibility = if (browserEnabled) View.VISIBLE else View.GONE
+        if (browserEnabled && !lastBrowserUrl.isNullOrBlank()) {
             try {
                 webViewWidget.loadUrl(lastBrowserUrl)
             } catch (t: Throwable) {
@@ -194,10 +256,13 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
             .putString("scene_name", sceneName)
             .putString("overlay_text", overlayText)
             .putString("browser_url", browserUrl)
+            .putBoolean("browser_source_enabled", browserSourceSwitch.isChecked)
             .putBoolean("vertical_crop", verticalCropSwitch.isChecked)
             .apply()
         sceneStatusText.text = "Scene saved • $sceneName"
-        if (browserUrl.isNotBlank()) {
+        overlayTextView.text = overlayText
+        webViewWidget.visibility = if (browserSourceSwitch.isChecked) View.VISIBLE else View.GONE
+        if (browserSourceSwitch.isChecked && browserUrl.isNotBlank()) {
             try {
                 webViewWidget.loadUrl(browserUrl)
             } catch (t: Throwable) {
@@ -229,6 +294,23 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
 
     private fun restorePrivateChat() {
         privateChatHistory.text = loadPrivateMessages().joinToString("\n").ifBlank { "No private replies yet" }
+    }
+
+    private fun loadBrowserUrl() {
+        val rawUrl = browserUrlInput.text.toString().trim().ifBlank {
+            prefs.getString("browser_url", "") ?: ""
+        }
+        if (rawUrl.isBlank()) return
+        val url = rawUrl.trim().replace(" ", "%20").let {
+            if (it.startsWith("http://") || it.startsWith("https://")) it else "https://$it"
+        }
+        try {
+            webViewWidget.loadUrl(url)
+            streamStatusText.text = "Loaded browser source: $url"
+        } catch (t: Throwable) {
+            Log.w(TAG, "Failed to load browser widget URL", t)
+            streamStatusText.text = "Browser source load failed"
+        }
     }
 
     private fun restoreAudienceCount() {
@@ -265,11 +347,132 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
         subscriberCountText.text = "Subscribers: 0"
     }
 
+    private fun initializeScreenCapture() {
+        mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        val metrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(metrics)
+        screenDensity = metrics.densityDpi
+        screenWidth = metrics.widthPixels
+        screenHeight = metrics.heightPixels
+    }
+
+    private fun toggleScreenRecord() {
+        if (screenRecordingActive) {
+            stopScreenRecord()
+        } else {
+            startScreenRecord()
+        }
+    }
+
+    private fun startScreenRecord() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            Snackbar.make(findViewById(R.id.control_panel), "Screen recording is not supported on this device", Snackbar.LENGTH_LONG).show()
+            return
+        }
+        val captureIntent = mediaProjectionManager?.createScreenCaptureIntent()
+        startActivityForResult(captureIntent, SCREEN_RECORD_REQUEST_CODE)
+    }
+
+    private fun stopScreenRecord() {
+        if (!screenRecordingActive) return
+        screenRecordingActive = false
+        mediaRecorder?.apply {
+            try {
+                stop()
+            } catch (t: Throwable) {
+                Log.w(TAG, "Error stopping screen recorder", t)
+            }
+            reset()
+            release()
+        }
+        mediaRecorder = null
+        virtualDisplay?.release()
+        virtualDisplay = null
+        mediaProjection?.stop()
+        mediaProjection = null
+        screenRecordButton.text = "Screen"
+        streamStatusText.text = "Screen recording stopped"
+    }
+
+    private fun prepareMediaRecorder(outputPath: String): Boolean {
+        try {
+            val file = File(outputPath)
+            if (file.parentFile != null && !file.parentFile.exists()) {
+                file.parentFile.mkdirs()
+            }
+            mediaRecorder = MediaRecorder().apply {
+                setVideoSource(MediaRecorder.VideoSource.SURFACE)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setOutputFile(outputPath)
+                setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+                setVideoEncodingBitRate(6_000_000)
+                setVideoFrameRate(30)
+                setVideoSize(screenWidth, screenHeight)
+                prepare()
+            }
+            mediaProjection?.let { projection ->
+                virtualDisplay = projection.createVirtualDisplay(
+                    "screen_record",
+                    screenWidth,
+                    screenHeight,
+                    screenDensity,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    mediaRecorder!!.surface,
+                    null,
+                    null
+                )
+                mediaRecorder?.start()
+                return true
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to prepare screen recorder", t)
+        }
+        return false
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == SCREEN_RECORD_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                mediaProjection = mediaProjectionManager?.getMediaProjection(resultCode, data)
+                val outputFile = getExternalFilesDir(null)?.resolve("ScreenRecordings")?.resolve("screen_${System.currentTimeMillis()}.mp4")
+                if (prepareMediaRecorder(outputFile?.absolutePath ?: "")) {
+                    screenRecordingActive = true
+                    screenRecordButton.text = "Stop"
+                    streamStatusText.text = "Screen recording active"
+                } else {
+                    Snackbar.make(findViewById(R.id.control_panel), "Screen recording failed", Snackbar.LENGTH_LONG).show()
+                }
+            } else {
+                Snackbar.make(findViewById(R.id.control_panel), "Screen recording permission denied", Snackbar.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun loadPrivateMessages(): List<String> {
         return (prefs.getString("private_chat_messages", "") ?: "")
             .split("\n")
             .map { it.trim() }
             .filter { it.isNotBlank() }
+    }
+
+    private fun ensurePermissions() {
+        val missing = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PermissionChecker.PERMISSION_GRANTED
+        }
+        if (missing.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, missing.toTypedArray(), PERMISSION_REQUEST_CODE)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            val denied = permissions.zip(grantResults.toTypedArray()).filter { it.second != android.content.pm.PackageManager.PERMISSION_GRANTED }
+            if (denied.isNotEmpty()) {
+                Snackbar.make(findViewById(R.id.control_panel), "Permissions are required for streaming and recording", Snackbar.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun toggleStream() {
@@ -453,6 +656,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), SurfaceHolder.Ca
     }
 
     override fun onDestroy() {
+        stopScreenRecord()
         super.onDestroy()
         stopStreamService()
     }

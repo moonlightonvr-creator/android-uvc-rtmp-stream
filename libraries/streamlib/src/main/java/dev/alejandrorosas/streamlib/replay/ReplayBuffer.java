@@ -33,6 +33,8 @@ public class ReplayBuffer {
     private DataOutputStream currentOut;
     private long currentSegmentStartUs = -1;
     private File currentSegmentFile;
+    private long lastFramePtsUs = -1;
+    private int frameCount = 0;
 
     public ReplayBuffer(File baseDir, int maxSeconds, int segmentDurationMs) throws IOException {
         this.maxSeconds = Math.max(1, maxSeconds);
@@ -102,6 +104,9 @@ public class ReplayBuffer {
         if (h264Buffer == null || info == null) return;
         try {
             long ptsUs = info.presentationTimeUs;
+            if (lastFramePtsUs >= 0 && ptsUs > lastFramePtsUs) {
+                frameCount++;
+            }
             rotateSegmentIfNeeded(ptsUs);
             if (currentOut == null) return;
             int size = info.size;
@@ -109,11 +114,11 @@ public class ReplayBuffer {
             int oldPos = h264Buffer.position();
             h264Buffer.get(data, 0, size);
             h264Buffer.position(oldPos);
-            // frame header: pts, flags, size
             currentOut.writeLong(ptsUs);
             currentOut.writeInt(info.flags);
             currentOut.writeInt(size);
             currentOut.write(data);
+            lastFramePtsUs = ptsUs;
         } catch (IOException e) {
             Log.e(TAG, "Failed to write frame to segment", e);
         }
@@ -157,7 +162,6 @@ public class ReplayBuffer {
             muxer = new MediaMuxer(outPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
             int videoTrack = muxer.addTrack(videoFormat);
             muxer.start();
-            // iterate frames in order and write
             for (File seg : toUse) {
                 DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(seg)));
                 try {
@@ -196,5 +200,7 @@ public class ReplayBuffer {
 
     public synchronized void shutdown() {
         closeCurrentSegment();
+        lastFramePtsUs = -1;
+        frameCount = 0;
     }
 }

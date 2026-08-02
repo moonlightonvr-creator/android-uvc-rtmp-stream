@@ -4,7 +4,13 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'dagger.hilt.android.plugin'
 
 android {
+    compileSdkVersion 34
     namespace "dev.alejandrorosas.core"
+
+    defaultConfig {
+        minSdkVersion 23
+        targetSdkVersion 34
+    }
 }
 
 dependencies {

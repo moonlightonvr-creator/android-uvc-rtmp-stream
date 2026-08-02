@@ -24,8 +24,20 @@ Use the GitHub Actions workflow in `.github/workflows/build-apk-artifact.yml` to
 - USB UVC camera preview and RTMP streaming
 - Local high-bitrate recording
 - 30s/60s/90s/120s replay highlight exports
+- Integrated browser widget overlay for on-screen browser source playback
+- Screen recording support to capture app preview + browser overlay
 - Private operator-side chat and audience/subscriber counters
 - Vertical 9:16 stream toggle and scene presets
+
+> Note: the browser WebView overlay is shown in the app and captured by screen recording. It is not merged directly into the RTMP stream from the USB camera feed.
+
+## Local build requirements
+
+If you see `SDK location not found`, create `local.properties` at the project root with a valid SDK path:
+
+    sdk.dir=/path/to/Android/Sdk
+
+Or export `ANDROID_HOME` / `ANDROID_SDK_ROOT` before building.
 
 ## Libraries
 
