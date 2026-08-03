@@ -1,4 +1,4 @@
-name: Build APK Custom Run
+name: Build APK
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "master", "main" ]
 
 jobs:
-  native-build-task:
+  build:
     runs-on: ubuntu-latest
 
     steps:
