@@ -10,8 +10,8 @@ android {
         applicationId "com.capture.clipper"
         minSdk 23
         targetSdk 34
-        versionCode 16
-        versionName "16.0" // Bumps cache to force a completely clean execution track
+        versionCode 17
+        versionName "17.0" // Force-bumps the cache index to clear the Actions cache
     }
 
     buildTypes {
@@ -27,13 +27,6 @@ android {
     }
 }
 
-// Forces the build engine to completely turn off the broken ktlint checks
-tasks.whenTaskAdded { task ->
-    if (task.name.contains("ktlint") || task.name.contains("lintKotlin")) {
-        task.enabled = false
-    }
-}
-
 repositories {
     google()
     mavenCentral()
@@ -44,6 +37,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     
-    // The canonical, un-fragmented master path that JitPack can actively index and download
-    implementation 'com.github.jiangdongguo:AndroidUSBCamera:2.3.4'
+    // Modernized UVC framework that includes all binaries natively without broken sub-dependencies
+    implementation 'com.github.Liuguihong:AndroidUVCCamera:1.0.0'
 }
