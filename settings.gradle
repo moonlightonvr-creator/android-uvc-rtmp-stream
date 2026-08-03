@@ -1,5 +1,17 @@
-rootProject.name='UVC Rtmp Stream'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+rootProject.name = "CaptureClipper"
 include ':app'
-include ':core'
-include ':libraries:streamlib'
-include ':libraries:libuvccamera'
