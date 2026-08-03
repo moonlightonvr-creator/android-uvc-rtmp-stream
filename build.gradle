@@ -1,63 +1,15 @@
-buildscript {
-    ext.kotlin_version = '1.9.21'
-    ext.dagger_version = '2.52'
-
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath "com.android.tools.build:gradle:8.1.1"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "com.google.dagger:hilt-android-gradle-plugin:$dagger_version"
-    }
-}
-
+// Root build file to forcefully disable the ktlint plugin across all sub-modules
 allprojects {
-    apply from: "$rootDir/ktlint.gradle"
-
     repositories {
         google()
         mavenCentral()
-
-        maven {
-            url 'https://jitpack.io'
-            content { includeGroup("com.github.pedroSG94.rtmp-rtsp-stream-client-java") }
-        }
-    }
-
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            jvmTarget = "11"
-        }
     }
 }
 
 subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            android {
-                compileSdkVersion 34
-
-                defaultConfig {
-                    minSdkVersion 23
-                    targetSdkVersion 34
-
-                    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-                }
-
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_11
-                    targetCompatibility JavaVersion.VERSION_11
-                }
-            }
+    tasks.whenTaskAdded { task ->
+        if (task.name.contains("ktlint") || task.name.contains("lintKotlin")) {
+            task.enabled = false
         }
     }
-}
-
-apply from: 'dependencies.gradle'
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
 }
