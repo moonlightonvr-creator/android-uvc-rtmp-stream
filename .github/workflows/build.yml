@@ -28,4 +28,3 @@ jobs:
 
     - name: Compile Debug App Package
       run: ./gradlew assembleDebug --no-daemon
-# Force Trigger Run v10
