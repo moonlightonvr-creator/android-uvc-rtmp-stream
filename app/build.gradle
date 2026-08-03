@@ -10,8 +10,8 @@ android {
         applicationId "com.capture.clipper"
         minSdk 23
         targetSdk 34
-        versionCode 12
-        versionName "12.0" // Force-bumps the cache integer to completely reset the Actions runner cache
+        versionCode 13
+        versionName "13.0" // Force-bumps the cache index to clear the Actions cache
     }
 
     buildTypes {
@@ -37,6 +37,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     
-    // Self-contained library configuration that fixes the missing serenegiant dependencies
-    implementation 'com.github.saki4510t:UVCCamera:v2.3.4'
+    // Modernized UVC framework that includes all binaries natively without crashing
+    implementation 'com.github.Liuguihong:AndroidUVCCamera:1.0.0'
 }
