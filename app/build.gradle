@@ -10,8 +10,8 @@ android {
         applicationId "com.capture.clipper"
         minSdk 23
         targetSdk 34
-        versionCode 9
-        versionName "9.0" // Version bump to clear the GitHub Actions compiler cache entirely
+        versionCode 10
+        versionName "10.0" // Force bump cache
     }
 
     buildTypes {
@@ -37,6 +37,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     
-    // Fixed target path that JitPack can actively index and download without throwing a 404
-    implementation 'com.github.jiangdongguo:AndroidUSBCamera:3.2.8'
+    // Correctly targets the modern UVC hardware library module that JitPack can actively compile
+    implementation 'com.github.jiangdongguo.AndroidUSBCamera:libausbc:3.3.3'
 }
