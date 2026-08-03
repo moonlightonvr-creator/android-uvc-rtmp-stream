@@ -1,15 +1,17 @@
-// Root build file to forcefully disable the ktlint plugin across all sub-modules
-allprojects {
+buildscript {
     repositories {
         google()
         mavenCentral()
     }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.2'
+    }
 }
 
-subprojects {
-    tasks.whenTaskAdded { task ->
-        if (task.name.contains("ktlint") || task.name.contains("lintKotlin")) {
-            task.enabled = false
-        }
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
 }
